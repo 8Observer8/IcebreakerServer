@@ -2,6 +2,7 @@
 #define ICEBREAKERSERVER_H
 
 #include <QObject>
+#include <QtSql>
 
 QT_BEGIN_NAMESPACE
 class QTcpServer;
@@ -26,6 +27,7 @@ private:
     QTcpSocket *tcpSocket;
     QNetworkSession *networkSession;
     quint16 m_nextBlockSize;
+    QSqlDatabase database;
 
     int sensor_01();
     int sensor_02();
