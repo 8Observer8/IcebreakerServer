@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core network sql
+QT       += core network
 
 QT       -= gui
 

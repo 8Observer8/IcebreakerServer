@@ -1,7 +1,6 @@
 #include "IcebreakerServer.h"
 
 #include <QtNetwork>
-#include <QFileInfo>
 #include <iostream>
 
 IcebreakerServer::IcebreakerServer() :
@@ -9,21 +8,6 @@ IcebreakerServer::IcebreakerServer() :
     networkSession(0),
     m_nextBlockSize(0)
 {
-    // Database for values of sensors
-    database = QSqlDatabase::addDatabase("QSQLITE");
-    QString path = QDir::currentPath()+QString("/database.sqlite");
-    database.setDatabaseName(path);
-
-    QFileInfo file(path);
-
-    if (file.isFile()) {
-        if (!database.open()) {
-            std::cerr << "Database File was not opened." << std::endl;
-        }
-    } else {
-        std::cerr << "Database File does not exist. Usage the name: " << path.toStdString() << std::endl;
-    }
-
     qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
 
     QNetworkConfigurationManager manager;
@@ -143,37 +127,6 @@ void IcebreakerServer::readyRead()
             int value03 = sensor_03();
             int value04 = sensor_04();
             int value05 = sensor_05();
-
-            // Save to database
-            if (database.isOpen()) {
-                QSqlQuery query;
-                QString strQuery(QString("INSERT INTO valuesOfSensors(value, data_time, sensor_name) VALUES ('%1','%2', 'value01')").arg(value01).arg(QDateTime::currentDateTime().toString()));
-                if (!query.exec(strQuery)) {
-                    std::cerr << "Wrong query." << std::endl;
-                }
-
-                strQuery = QString("INSERT INTO valuesOfSensors(value, data_time, sensor_name) VALUES ('%1','%2', 'value02')").arg(value02).arg(QDateTime::currentDateTime().toString());
-                if (!query.exec(strQuery)) {
-                    std::cerr << "Wrong query." << std::endl;
-                }
-
-                strQuery = QString("INSERT INTO valuesOfSensors(value, data_time, sensor_name) VALUES ('%1','%2', 'value03')").arg(value03).arg(QDateTime::currentDateTime().toString());
-                if (!query.exec(strQuery)) {
-                    std::cerr << "Wrong query." << std::endl;
-                }
-
-                strQuery = QString("INSERT INTO valuesOfSensors(value, data_time, sensor_name) VALUES ('%1','%2', 'value04')").arg(value04).arg(QDateTime::currentDateTime().toString());
-                if (!query.exec(strQuery)) {
-                    std::cerr << "Wrong query." << std::endl;
-                }
-
-                strQuery = QString("INSERT INTO valuesOfSensors(value, data_time, sensor_name) VALUES ('%1','%2', 'value05')").arg(value05).arg(QDateTime::currentDateTime().toString());
-                if (!query.exec(strQuery)) {
-                    std::cerr << "Wrong query." << std::endl;
-                }
-            } else {
-                std::cerr << "No connection to Database." << std::endl;
-            }
 
             // Send answer to Viewer
             answer = QString("%1,%2,%3,%4,%5").arg(value01).arg(value02).arg(value03).arg(value04).arg(value05);
