@@ -2,6 +2,7 @@
 #define ICEBREAKERSERVER_H
 
 #include <QObject>
+#include <QtSql>
 
 QT_BEGIN_NAMESPACE
 class QTcpServer;
@@ -20,18 +21,19 @@ private slots:
     void newConnection();
     void readyRead();
     void sendToViewer(QTcpSocket *pSocket, const QString &str);
+    void sendToViewerDataFromRange(QTcpSocket *clientSocket, const QString &list);
+    void sendToViewerAvailableRange(QTcpSocket *clientSocket);
 
 private:
+    void openDatabase();
+    void configurateNetwork();
+    void saveValuesToDatabase(const QString &inputData);
     QTcpServer *tcpServer;
     QTcpSocket *tcpSocket;
     QNetworkSession *networkSession;
     quint16 m_nextBlockSize;
-
-    int sensor_01();
-    int sensor_02();
-    int sensor_03();
-    int sensor_04();
-    int sensor_05();
+    QString mCurrentValues;
+    QSqlDatabase mDatabase;
 };
 
 #endif // ICEBREAKERSERVER_H
