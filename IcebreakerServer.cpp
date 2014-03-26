@@ -294,12 +294,10 @@ void IcebreakerServer::sessionOpened()
     }
 
     // if we did not find one, use IPv4 localhost
-    if (ipAddress.isEmpty())
+    if (ipAddress.isEmpty()) {
         ipAddress = QHostAddress(QHostAddress::LocalHost).toString();
+    }
 
-    //    statusLabel->setText(tr("The server is running on\n\nIP: %1\nport: %2\n\n"
-    //                            "Run the Fortune Client example now.")
-    //                         .arg(ipAddress).arg(tcpServer->serverPort()));
     std::cout << "The server is running on" << std::endl;
     std::cout << "IP: " << ipAddress.toStdString() << std::endl;
     std::cout << "Port Number: " << tcpServer->serverPort() << std::endl;
