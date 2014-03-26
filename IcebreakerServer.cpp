@@ -46,40 +46,35 @@ void IcebreakerServer::readyRead()
 
         QString inputData;
         in >> inputData;
-        QStringList list = inputData.split(',');
+        QStringList sensorsList = inputData.split(';');
+        QStringList command = sensorsList[0].split(',');
 
-        if (inputData == QString("currentValues")) {
-            // Pass current values to Viewer
-            sendToViewer(clientSocket, mCurrentValues);
-        } else if ((list.size() == 3) && (list[0] == QString("getRequiredRange"))) { // From Range
-            sendToViewerDataFromRange(clientSocket, inputData);
-        } else if (inputData == QString("getAvailableRange")) {
+        if (command[0] == QString("currentValues")) {
+            if (sensorsList.size() == 1) { // from Viewer
+                if (!mCurrentValues.isEmpty()) {
+                    sendToViewer(clientSocket, mCurrentValues);
+                }
+            } else if (sensorsList.size() > 1) { // from Sensors
+                // Save current values of sensors
+                mCurrentValues = inputData;
+            }
+        } else if (command[0] == QString("getRequiredRange")) { // From Viwer for Range
+            if (sensorsList.size() == 2) {
+                QStringList command = sensorsList[1].split(',');
+                if (command.size() == 2) {
+                    // Pass current values to Viewer
+                    sendToViewerDataFromRange(clientSocket, sensorsList[1]);
+                } else {
+                    std::cerr << "Error: command.size() != 2" << std::endl;
+                }
+            } else {
+                std::cerr << "Error: sensorsList.size() != 2" << std::endl;
+            }
+        } else if (command[0] == QString("getAvailableRange")) {
             sendToViewerAvailableRange(clientSocket);
         } else {
-            // Save current values of sensors
-            mCurrentValues = inputData;
-
-            // Pass current values to Viewer
-            sendToViewer(clientSocket, mCurrentValues);
-
-            // Save values to database
-            saveValuesToDatabase(inputData);
+            std::cerr << "Error: unknown command: " << command[0].toStdString() << std::endl;
         }
-
-        //        if (str == QString("currentValues")) {
-        //            QString answer;
-        //            int value01 = sensor_01();
-        //            int value02 = sensor_02();
-        //            int value03 = sensor_03();
-        //            int value04 = sensor_04();
-        //            int value05 = sensor_05();
-
-        //            // Send answer to Viewer
-        //            answer = QString("%1,%2,%3,%4,%5").arg(value01).arg(value02).arg(value03).arg(value04).arg(value05);
-        //            sendToViewer(clientSocket, answer);
-        //        } else {
-        //            std::cout << "Unknown command: " << str.toStdString() << std::endl;
-        //        }
 
         m_nextBlockSize = 0;
     }
@@ -103,8 +98,8 @@ void IcebreakerServer::sendToViewerDataFromRange(QTcpSocket *clientSocket, const
 {
     QStringList list = inputData.split(QChar(','));
 
-    QString beginRequired = list[1];
-    QString endRequired = list[2];
+    QString beginRequired = list[0];
+    QString endRequired = list[1];
 
     if (beginRequired.isEmpty() || endRequired.isEmpty()) {
         std::cerr << "Error in sendToViewerDataFromRange(): beginRequired or endRequired is empty" << std::endl;
@@ -132,7 +127,7 @@ void IcebreakerServer::sendToViewerDataFromRange(QTcpSocket *clientSocket, const
     qint64 end = endDateTime.toMSecsSinceEpoch();
 
     QSqlQuery query;
-    QString answer;
+    QString answer = QString("getRequiredRange,0;");
     QString strQuery = QString("SELECT * FROM valuesOfSensors WHERE data_time>='%1' AND data_time<='%2';").arg(begin).arg(end);
     if (mDatabase.isOpen()) {
         if (!query.exec(strQuery)) {
@@ -150,12 +145,14 @@ void IcebreakerServer::sendToViewerDataFromRange(QTcpSocket *clientSocket, const
         return;
     }
 
+    answer = answer.mid(0, answer.size()-1);
+
     sendToViewer(clientSocket, answer);
 }
 
 void IcebreakerServer::sendToViewerAvailableRange(QTcpSocket *clientSocket)
 {
-    QString answer = "alailableRange;";
+    QString answer = "alailableRange,0;";
     QSqlQuery query;
     QString strQuery;
     if (mDatabase.isOpen()) {
@@ -169,7 +166,7 @@ void IcebreakerServer::sendToViewerAvailableRange(QTcpSocket *clientSocket)
                 QDateTime time;
                 time.setMSecsSinceEpoch(query.value(0).toString().toULongLong());
                 answer += time.toString();
-                answer += ";";
+                answer += ",";
             }
         }
 
